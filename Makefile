@@ -7,6 +7,18 @@ supports_std_gnu2x := $(shell echo "" | $(CC) -std=gnu2x -x c - -fsyntax-only >/
 supports_std_c17 := $(shell echo "" | $(CC) -std=c17 -x c - -fsyntax-only >/dev/null 2>&1 && echo yes)
 supports_std_c11 := $(shell echo "" | $(CC) -std=c11 -x c - -fsyntax-only >/dev/null 2>&1 && echo yes)
 
+is_musl = $(shell ldd --version 2>/dev/null | grep -i musl || echo not_musl)
+is_glibc = $(shell ldd --version 2>/dev/null | grep -i glibc || echo not_glibc)
+is_musl_gcc = $(shell which musl-gcc 2>/dev/null && echo found || echo not_found)
+
+ifneq ($(is_musl),not_musl)
+    found_musl = xxx
+else ifneq ($(is_glibc),not_glibc)
+    found_glibc = xxx
+else ifneq ($(is_musl_gcc),not_found)
+    found_musl = xxx
+endif
+
 ifneq (,$(is_mingw))
 CFLAGS += -I/usr/local/include
 CFLAGS += -L/usr/local/lib
@@ -62,6 +74,13 @@ endif
 endif
 
 ifneq (,$(is_linux))
+CFLAGS += -L/usr/local/lib
+ifneq (,$(is_musl))
+  CFLAGS += -DMCPC_C23PTCH_KW1
+  CFLAGS += -DMCPC_C23PTCH_UCHAR1
+  CFLAGS += -DMCPC_C23PTCH_CKD1
+  CFLAGS += -DMCPC_C23GIVUP_FIXENUM
+endif
 ifneq (,$(supports_std_c23))
 CFLAGS += -std=c23
 else ifneq (,$(supports_std_gnu2x))
